@@ -1,3 +1,4 @@
+import { ENDPOINT_URLS } from "@/utils/constants";
 import {
   Button,
   Container,
@@ -9,6 +10,8 @@ import {
   Typography,
 } from "@mui/material";
 import { TimePicker } from "@mui/x-date-pickers";
+import dayjs from "dayjs";
+import Router from "next/router";
 import React, { useState } from "react";
 
 function AddHabit() {
@@ -17,6 +20,48 @@ function AddHabit() {
   const [measuredNumber, setMeasuredNumber] = useState("");
   const [weeklyCount, setWeeklyCount] = useState("");
   const [place, setPlace] = useState("");
+  const [habitTime, setHabitTime] = useState(() => dayjs());
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const UNITS = [
+    "minutes",
+    "hours",
+    "times",
+    "repetitions",
+    "pages",
+    "steps",
+    "km",
+    "miles",
+  ];
+
+  async function handleAddHabit() {
+    try {
+      setLoading(true);
+      setError("");
+      const payload = {
+        habitName,
+        measuredNumber,
+        selectedGoalUnits,
+        weeklyCount,
+        place,
+        habitTime: habitTime.toString(),
+      };
+      await fetch(ENDPOINT_URLS.ADD_HABIT, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      Router.push("/");
+    } catch (error) {
+      setLoading(false);
+      setError("There is some error, please try again");
+      console.log(error);
+    }
+  }
 
   return (
     <main className="p-4 ">
@@ -27,7 +72,7 @@ function AddHabit() {
             variant="h3"
             className="font-thin text-center"
           >
-            Let&apos;s begin a new adventure!
+            Looks like a new Adventure!
           </Typography>
           <Divider className="my-5" />
           <div className="flex flex-wrap items-end gap-x-9 gap-y-5">
@@ -65,10 +110,11 @@ function AddHabit() {
               className="w-40"
               size="small"
             >
-              <MenuItem value="minutes">minutes</MenuItem>
-              <MenuItem value="pages">pages</MenuItem>
-              <MenuItem value="reps">repetitions</MenuItem>
-              <MenuItem value="times">times</MenuItem>
+              {UNITS.map((unit) => (
+                <MenuItem key={unit} value={unit}>
+                  {unit}
+                </MenuItem>
+              ))}
             </Select>
             <TextField
               label="Times per week"
@@ -81,7 +127,11 @@ function AddHabit() {
             <Typography component="h2" variant="h5">
               times per week at
             </Typography>
-            <TimePicker label="enter time" />
+            <TimePicker
+              label="enter time"
+              value={habitTime}
+              onChange={(newValue) => setHabitTime(newValue)}
+            />
             <Typography component="h2" variant="h5">
               in
             </Typography>
@@ -94,12 +144,23 @@ function AddHabit() {
             />
           </div>
           <Button
+            disabled={
+              !place ||
+              !habitName ||
+              !habitTime ||
+              !selectedGoalUnits ||
+              !measuredNumber ||
+              !weeklyCount ||
+              loading
+            }
             color="error"
             variant="contained"
             className="block mt-6 ml-auto"
+            onClick={handleAddHabit}
           >
             Add Habit
           </Button>
+          <p className="text-red-600">{error}</p>
         </Paper>
       </Container>
     </main>
